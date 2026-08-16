@@ -130,3 +130,32 @@ create table if not exists tareas (
 );
 
 create index if not exists idx_tareas_estado on tareas (tenant_id, estado, creado_en desc);
+
+-- ─────────────────────────────────────────────────────────────────────
+-- SEGURIDAD
+--
+-- La publishable key es pública: cualquiera que vea el panel la tiene. Sin
+-- RLS, con esa key se pueden borrar todos los prospectos desde el navegador.
+-- Entonces: el panel LEE con la publishable, y el backend ESCRIBE con la
+-- service_role (que se saltea RLS por diseño y vive solo en el .env).
+-- ─────────────────────────────────────────────────────────────────────
+
+alter table negocios       enable row level security;
+alter table personas       enable row level security;
+alter table fuentes        enable row level security;
+alter table investigaciones enable row level security;
+alter table oportunidades  enable row level security;
+alter table tareas         enable row level security;
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'negocios','personas','fuentes','investigaciones','oportunidades','tareas'
+  ] loop
+    execute format('drop policy if exists lectura_publica on %I', t);
+    execute format(
+      'create policy lectura_publica on %I for select to anon, authenticated using (true)', t
+    );
+  end loop;
+end $$;
