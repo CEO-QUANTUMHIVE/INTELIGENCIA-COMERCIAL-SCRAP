@@ -1,0 +1,20 @@
+fastapi==0.118.0
+uvicorn[standard]==0.37.0
+pydantic==2.11.9
+python-dotenv==1.1.1
+httpx==0.28.1
+
+# Scraping
+# Scrapling exige playwright>=1.61: lo dejamos que él fije la versión.
+scrapling[fetchers]==0.4.14
+playwright>=1.61.0
+
+# Base de datos
+supabase==2.20.0
+
+# IA (los dos, se elige por variable de entorno PROVEEDOR_IA)
+anthropic==0.75.0
+openai==2.6.1
+
+# Pruebas
+pytest==8.4.2
