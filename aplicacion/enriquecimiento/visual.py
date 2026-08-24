@@ -12,6 +12,13 @@ logger = logging.getLogger(__name__)
 
 TAMANO_MUESTRA = (150, 150)
 TIEMPO_ESPERA = 10
+# Sin User-Agent, sitios como Wikimedia devuelven 403 a pedidos "de script".
+CABECERAS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    )
+}
 
 
 def extraer_colores(url_imagen: str | None, cantidad: int = 4) -> list[str]:
@@ -28,7 +35,9 @@ def extraer_colores(url_imagen: str | None, cantidad: int = 4) -> list[str]:
         import httpx
         from PIL import Image
 
-        respuesta = httpx.get(url_imagen, timeout=TIEMPO_ESPERA, follow_redirects=True)
+        respuesta = httpx.get(
+            url_imagen, timeout=TIEMPO_ESPERA, follow_redirects=True, headers=CABECERAS
+        )
         respuesta.raise_for_status()
 
         imagen = Image.open(io.BytesIO(respuesta.content)).convert("RGB")
