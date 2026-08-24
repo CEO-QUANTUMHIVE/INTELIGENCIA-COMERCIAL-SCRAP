@@ -8,6 +8,13 @@ httpx==0.28.1
 # Scrapling exige playwright>=1.61: lo dejamos que él fije la versión.
 scrapling[fetchers]==0.4.14
 playwright>=1.61.0
+# Patchright: Playwright parcheado anti-detección. google_maps.py lo usa
+# directo (Scrapling ya lo trae para Fetcher/StealthyFetcher, pero Maps
+# necesita el navegador real con sesión, no un fetch puntual).
+patchright>=1.61.0
+
+# Colores dominantes del logo (Módulo 1: identidad visual para Fábrica de Webs)
+Pillow==12.3.0
 
 # Base de datos
 # Tiene que ir a la par de postgrest/storage3/realtime/supabase-auth: la 2.20

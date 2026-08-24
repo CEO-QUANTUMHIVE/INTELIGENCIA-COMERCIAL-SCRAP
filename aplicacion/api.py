@@ -6,9 +6,10 @@ sincrónico.
 """
 
 import logging
+import secrets
 import uuid
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException
 
 from aplicacion import configuracion, coordinador
 from aplicacion.base_datos import supabase
@@ -25,6 +26,18 @@ app = FastAPI(
     version="0.1.0",
     description="Encuentra negocios, los investiga y dice qué venderles.",
 )
+
+
+def verificar_token(authorization: str | None = Header(default=None)) -> None:
+    """Exige `Authorization: Bearer <TOKEN_INTERNO>` en los endpoints que
+    tocan datos o disparan scraping. Si no hay TOKEN_INTERNO configurado (dev
+    local) no exige nada, igual que el resto del sistema con Supabase/IA.
+    """
+    if not configuracion.TOKEN_INTERNO:
+        return
+    esperado = f"Bearer {configuracion.TOKEN_INTERNO}"
+    if not authorization or not secrets.compare_digest(authorization, esperado):
+        raise HTTPException(status_code=401, detail="Token inválido o faltante.")
 
 # Respaldo para cuando no hay Supabase configurado todavía.
 TAREAS_EN_MEMORIA: dict[str, dict] = {}
@@ -87,7 +100,7 @@ def salud():
     }
 
 
-@app.post("/buscar")
+@app.post("/buscar", dependencies=[Depends(verificar_token)])
 def buscar(peticion: PeticionBuscar, tareas: BackgroundTasks):
     """Busca negocios en Google Maps, los enriquece y los puntúa.
 
@@ -102,7 +115,7 @@ def buscar(peticion: PeticionBuscar, tareas: BackgroundTasks):
     }
 
 
-@app.get("/tareas/{tarea_id}")
+@app.get("/tareas/{tarea_id}", dependencies=[Depends(verificar_token)])
 def ver_tarea(tarea_id: str):
     tarea = supabase.leer_tarea(tarea_id) or TAREAS_EN_MEMORIA.get(tarea_id)
     if not tarea:
@@ -110,7 +123,7 @@ def ver_tarea(tarea_id: str):
     return tarea
 
 
-@app.post("/investigar")
+@app.post("/investigar", dependencies=[Depends(verificar_token)])
 def investigar(peticion: PeticionInvestigar):
     """Investiga un negocio puntual. Tarda segundos, responde directo."""
     if not any([peticion.nombre, peticion.web, peticion.instagram, peticion.url_maps]):
@@ -128,7 +141,7 @@ def investigar(peticion: PeticionInvestigar):
     )
 
 
-@app.post("/clientes/investigar")
+@app.post("/clientes/investigar", dependencies=[Depends(verificar_token)])
 def investigar_cliente(peticion: PeticionInvestigar):
     """Onboarding de un cliente: arma el paquete para Webs y Agentes."""
     if not peticion.nombre:
@@ -137,11 +150,12 @@ def investigar_cliente(peticion: PeticionInvestigar):
         nombre=peticion.nombre,
         web_url=peticion.web,
         instagram_url=peticion.instagram,
+        facebook_url=peticion.facebook,
         url_maps=peticion.url_maps,
     )
 
 
-@app.post("/personas")
+@app.post("/personas", dependencies=[Depends(verificar_token)])
 def personas(peticion: PeticionPersonas):
     """Busca decisores B2B (perfiles públicos de LinkedIn vía buscador)."""
     return coordinador.buscar_personas(
@@ -152,7 +166,7 @@ def personas(peticion: PeticionPersonas):
     )
 
 
-@app.get("/negocios")
+@app.get("/negocios", dependencies=[Depends(verificar_token)])
 def listar_negocios(limite: int = 20, ciudad: str | None = None):
     """Los mejores prospectos guardados, ordenados por puntuación."""
     return supabase.mejores_negocios(limite=limite, ciudad=ciudad)

@@ -25,8 +25,20 @@ Supabase
 
 **B) Investigar un negocio puntual (prospecto o cliente)**
 
-Le pasás nombre, web, Instagram o el link de Maps, y devuelve la ficha completa
-más el paquete que consumen la Fábrica de Webs y la de Agentes.
+Le pasás nombre, web, Instagram, Facebook o el link de Maps, y devuelve la
+ficha completa más el paquete que consumen la Fábrica de Webs y la de
+Agentes: negocio, marca, servicios, precios, horarios, preguntas frecuentes
+y competidores mencionados — esto vía IA sobre lo que ya se scrapeó (nunca
+inventa: si no está en el texto, queda vacío) — más logo y colores
+dominantes (esto no depende de IA, es análisis de imagen puro: funciona
+incluso sin ninguna clave configurada).
+
+> **Este es el "Módulo 1 — Perfilador de Clientes".** Guía completa de
+> integración (contrato de la API, ejemplos de código, checklist de
+> activación) en
+> [`docs/modulo-1-perfilador-cliente.md`](docs/modulo-1-perfilador-cliente.md) —
+> es el documento para pasarle al equipo de Fábrica de Webs o de Fábrica de
+> Agentes.
 
 **C) Decisores B2B**
 
@@ -44,8 +56,10 @@ playwright install chromium
 patchright install chromium
 ```
 
-(Sí, son dos navegadores: Playwright para Google Maps y Patchright — el que usa
-Scrapling — para los sitios que bloquean bots. Se instalan una sola vez.)
+(`playwright install` deja los binarios base; `patchright install` instala el
+Chromium parcheado anti-detección que usan tanto Google Maps como Scrapling
+—vía `StealthyFetcher`— para los sitios que bloquean bots. Se instalan una
+sola vez.)
 
 ```bash
 copy .env.example .env
@@ -96,19 +110,26 @@ uvicorn aplicacion.api:app --reload
 
 Documentación interactiva en <http://localhost:8000/docs>.
 
-| Método | Ruta | Qué hace |
-|---|---|---|
-| `GET` | `/salud` | Verifica qué está configurado |
-| `POST` | `/buscar` | Busca negocios (en segundo plano, devuelve `tarea_id`) |
-| `GET` | `/tareas/{id}` | Estado y resultado de la búsqueda |
-| `POST` | `/investigar` | Investiga un negocio (responde directo) |
-| `POST` | `/clientes/investigar` | Paquete para Fábrica de Webs / Agentes |
-| `POST` | `/personas` | Decisores B2B |
-| `GET` | `/negocios` | Mejores prospectos guardados |
+| Método | Ruta | Qué hace | Requiere token |
+|---|---|---|---|
+| `GET` | `/salud` | Verifica qué está configurado | No |
+| `POST` | `/buscar` | Busca negocios (en segundo plano, devuelve `tarea_id`) | Sí |
+| `GET` | `/tareas/{id}` | Estado y resultado de la búsqueda | Sí |
+| `POST` | `/investigar` | Investiga un negocio (responde directo) | Sí |
+| `POST` | `/clientes/investigar` | Paquete para Fábrica de Webs / Agentes | Sí |
+| `POST` | `/personas` | Decisores B2B | Sí |
+| `GET` | `/negocios` | Mejores prospectos guardados | Sí |
+
+Si configurás `TOKEN_INTERNO` en `.env`, todo lo que no sea `/salud` exige el
+header `Authorization: Bearer <TOKEN_INTERNO>` — así es como la Fábrica de
+Webs y la Fábrica de Agentes (u otro backend interno) consumen esta API sin
+dejarla abierta. Con `TOKEN_INTERNO` vacío (default en desarrollo local) no
+pide nada.
 
 ```bash
 curl -X POST http://localhost:8000/buscar \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN_INTERNO" \
   -d "{\"rubro\":\"barberías\",\"ciudad\":\"Buenos Aires\",\"cantidad\":20}"
 ```
 
@@ -124,7 +145,7 @@ aplicacion/
 ├── modelos.py          las formas de los datos
 │
 ├── buscadores/         hablan con cada fuente
-│   ├── google_maps.py    ← Playwright (scrollea y entra a cada ficha)
+│   ├── google_maps.py    ← Patchright (scrollea y entra a cada ficha, anti-detección)
 │   ├── web.py            ← Scrapling (HTTP rápido, stealth si bloquean)
 │   ├── instagram.py
 │   ├── facebook.py
@@ -133,10 +154,13 @@ aplicacion/
 ├── enriquecimiento/    convierte datos crudos en información útil
 │   ├── contactos.py      normaliza teléfonos, elige el mejor email
 │   ├── negocio.py        completa la ficha visitando web y redes
-│   └── oportunidades.py  arma el análisis comercial
+│   ├── oportunidades.py  arma el análisis comercial
+│   └── visual.py         logo + colores dominantes (sin IA, análisis de imagen)
 │
 ├── ia/                 Claude u OpenAI, se elige por variable de entorno
-│   ├── esquema.py        el contrato JSON y el prompt (compartido)
+│   ├── __init__.py       analizar_con_esquema(): primitiva genérica compartida
+│   ├── esquema.py        contrato JSON + prompt del scoring comercial
+│   ├── perfil_cliente.py contrato JSON + prompt del paquete de onboarding
 │   ├── claude.py
 │   └── openai.py
 │
@@ -174,8 +198,14 @@ plataforma. La lista de plataformas está en `buscadores/web.py`; agregá las qu
 falten a medida que aparezcan.
 
 **Sin IA el sistema igual funciona.** Si no hay clave configurada (o la llamada
-falla), `ia/__init__.py` puntúa con reglas simples. Sirve para probar el
-pipeline entero gratis.
+falla), `ia/__init__.py` puntúa con reglas simples para el scoring comercial, y
+`ia/perfil_cliente.py` devuelve el paquete con esos campos vacíos en vez de
+inventar servicios o precios que el cliente no tiene. Sirve para probar el
+pipeline entero gratis y evita que la IA le mienta a la Fábrica de Webs.
+
+**La API no está abierta por defecto.** `TOKEN_INTERNO` en `.env` protege
+todo salvo `/salud`. Vacío en desarrollo local; setealo antes de que la
+Fábrica de Webs o la Fábrica de Agentes la llamen desde afuera.
 
 **El modelo por defecto es `claude-opus-5`.** Para analizar cientos de negocios
 por corrida, poné `MODELO_CLAUDE=claude-sonnet-5` en `.env`: mismo contrato,
@@ -197,7 +227,14 @@ corriéndolo.
 
 ## Qué sigue (cuando algo lo justifique, no antes)
 
-1. Conectar `investigar_cliente` con la Fábrica de Webs (generar demo + screenshot)
-2. Conectar con la Fábrica de Agentes (armar knowledge base del cliente)
-3. Outreach: WhatsApp y email primero, Instagram por la API oficial de Meta
+1. ~~Que `investigar_cliente` arme el paquete completo~~ — listo: servicios,
+   precios, horarios, FAQ y competidores se extraen vía IA de lo scrapeado.
+   Contrato de integración documentado en
+   [`docs/modulo-1-perfilador-cliente.md`](docs/modulo-1-perfilador-cliente.md).
+   Falta que Fábrica de Webs (generar demo + screenshot) y Fábrica de Agentes
+   (knowledge base del cliente) lo consuman de su lado — vive en esos repos.
+2. Outreach: WhatsApp y email primero, Instagram/Facebook por la API oficial
+   de Meta vía Chatwoot (ver `docs/superpowers/specs/2026-08-17-outreach-chatwoot-design.md`)
+3. Cazador de inversión y créditos: mismo motor, nuevo dominio (oportunidades
+   de capital en vez de prospectos comerciales) + redactor de propuestas
 4. LinkedIn Lead Gen Forms + Lead Sync API

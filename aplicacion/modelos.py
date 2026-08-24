@@ -32,6 +32,9 @@ class Negocio(BaseModel):
     tiene_reservas_online: bool | None = None
     tecnologias: list[str] = Field(default_factory=list)
     texto_web: str | None = None
+    # Logo o foto de perfil pública (og:image de la web, o si no hay, de IG/FB).
+    # Es una URL externa: no se descarga ni se re-hostea acá.
+    logo_url: str | None = None
 
 
 class Oportunidad(BaseModel):

@@ -28,6 +28,7 @@ def enriquecer(negocio: Negocio) -> Negocio:
             negocio.instagram = negocio.instagram or datos_web["instagram"]
             negocio.facebook = negocio.facebook or datos_web["facebook"]
             negocio.linkedin = negocio.linkedin or datos_web["linkedin"]
+            negocio.logo_url = datos_web.get("logo_url")
             if datos_web["whatsapp"]:
                 negocio.whatsapp = contactos.normalizar_telefono(datos_web["whatsapp"])
     else:

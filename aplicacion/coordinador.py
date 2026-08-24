@@ -9,7 +9,8 @@ import logging
 from aplicacion.base_datos import supabase
 from aplicacion.buscadores import facebook, google_maps, instagram, linkedin, web
 from aplicacion.enriquecimiento import negocio as enriquecedor
-from aplicacion.enriquecimiento import oportunidades
+from aplicacion.enriquecimiento import oportunidades, visual
+from aplicacion.ia import perfil_cliente
 from aplicacion.modelos import (
     Negocio,
     NegocioAnalizado,
@@ -111,17 +112,21 @@ def investigar_cliente(
     nombre: str,
     web_url: str | None = None,
     instagram_url: str | None = None,
+    facebook_url: str | None = None,
     url_maps: str | None = None,
 ) -> PaquetePerfilCliente:
     """Onboarding de un cliente que ya contrató.
 
-    Devuelve el paquete que consumen la Fábrica de Webs y la de Agentes.
+    Devuelve el paquete que consumen la Fábrica de Webs y la de Agentes:
+    datos del negocio, marca, y (vía IA sobre lo scrapeado) servicios,
+    precios, horarios, preguntas frecuentes y competidores mencionados.
     """
 
     resultado = investigar_negocio(
         nombre=nombre,
         web_url=web_url,
         instagram_url=instagram_url,
+        facebook_url=facebook_url,
         url_maps=url_maps,
         guardar=False,
     )
@@ -141,9 +146,32 @@ def investigar_cliente(
         except Exception:  # noqa: BLE001
             datos_fb = {}
 
+    perfil = perfil_cliente.extraer(
+        {
+            "nombre": ficha.nombre,
+            "categoria": ficha.categoria,
+            "texto_web": ficha.texto_web,
+            "bio_instagram": datos_ig.get("bio"),
+            "descripcion_facebook": datos_fb.get("descripcion"),
+        }
+    )
+
+    # Prioridad: el logo de la propia web (más confiable) > el de Instagram
+    # > el de Facebook. Es una URL pública, no se descarga ni se re-hostea.
+    logo_url = ficha.logo_url or datos_ig.get("logo_url") or datos_fb.get("logo_url")
+    ficha.logo_url = logo_url
+    colores = visual.extraer_colores(logo_url)
+
     paquete = PaquetePerfilCliente(
         negocio=ficha,
+        servicios=perfil["servicios"],
+        precios=perfil["precios"],
+        horarios=perfil["horarios"],
+        preguntas_frecuentes=perfil["preguntas_frecuentes"],
+        competidores=perfil["competidores"],
         marca={
+            "logo_url": logo_url,
+            "colores": colores,
             "bio_instagram": datos_ig.get("bio"),
             "seguidores": datos_ig.get("seguidores"),
             "descripcion_facebook": datos_fb.get("descripcion"),

@@ -100,11 +100,14 @@ El mensaje sugerido tiene que mencionar algo concreto y verificable del negocio 
 genéricas. Máximo 4 líneas."""
 
 
-def armar_prompt(datos_negocio: dict) -> str:
+def armar_prompt(datos: dict, encabezado: str = "Analizá este negocio:") -> str:
+    """Genérico: lo usa cualquier extracción estructurada (scoring, perfil de
+    cliente, oportunidades de capital...), no solo el análisis comercial.
+    """
     import json
 
     return (
-        "Analizá este negocio:\n\n"
-        + json.dumps(datos_negocio, ensure_ascii=False, indent=2)
-        + "\n\nDevolvé el análisis en el formato pedido."
+        f"{encabezado}\n\n"
+        + json.dumps(datos, ensure_ascii=False, indent=2)
+        + "\n\nDevolvé el resultado en el formato pedido."
     )

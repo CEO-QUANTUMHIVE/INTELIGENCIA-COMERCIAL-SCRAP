@@ -2,18 +2,27 @@
 
 Scrapea el listado y después entra a cada ficha para sacar teléfono y web,
 que son los dos datos que realmente sirven para prospectar.
+
+El import de Patchright (Playwright parcheado anti-detección) va perezoso,
+adentro de las funciones que lo usan: así el resto del sistema (IA, modelos,
+otros buscadores) se puede importar y testear sin tener el navegador
+instalado, igual que ya hacen web.py/instagram.py/facebook.py con Scrapling.
 """
+
+from __future__ import annotations
 
 import logging
 import re
 import time
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 from urllib.parse import quote_plus
-
-from playwright.sync_api import Page, TimeoutError as ErrorDeEspera, sync_playwright
 
 from aplicacion import configuracion
 from aplicacion.modelos import Negocio
+
+if TYPE_CHECKING:
+    from patchright.sync_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +34,8 @@ AGENTE = (
 
 @contextmanager
 def _navegador():
+    from patchright.sync_api import sync_playwright
+
     with sync_playwright() as p:
         navegador = p.chromium.launch(
             headless=configuracion.NAVEGADOR_OCULTO,
@@ -61,6 +72,8 @@ def _aceptar_cookies(pagina: Page) -> None:
 
 def _juntar_enlaces(pagina: Page, cantidad: int) -> list[str]:
     """Scrollea el panel de resultados hasta juntar `cantidad` fichas."""
+    from patchright.sync_api import TimeoutError as ErrorDeEspera
+
     try:
         pagina.wait_for_selector('div[role="feed"]', timeout=20000)
     except ErrorDeEspera:
@@ -126,6 +139,8 @@ def _coordenadas(url: str) -> tuple[float | None, float | None]:
 
 
 def _leer_ficha(pagina: Page, url: str, ciudad: str) -> Negocio | None:
+    from patchright.sync_api import TimeoutError as ErrorDeEspera
+
     try:
         pagina.goto(url, wait_until="domcontentloaded", timeout=30000)
         pagina.wait_for_selector("h1", timeout=15000)

@@ -12,10 +12,18 @@ from aplicacion.modelos import Analisis
 logger = logging.getLogger(__name__)
 
 
-def analizar_negocio(datos_negocio: dict) -> Analisis:
+def analizar_con_esquema(
+    datos: dict, esquema: dict, instrucciones: str, encabezado: str | None = None
+) -> dict | None:
+    """Primitiva genérica: le pide a la IA que devuelva `datos` moldeado a
+    `esquema`. La usan tanto el scoring comercial como cualquier otra
+    extracción estructurada (perfil de cliente, oportunidades de capital...).
+
+    Devuelve None si no hay IA configurada o si falló — quien llama decide
+    el respaldo (reglas, valores vacíos, lo que corresponda a ese caso).
+    """
     if not configuracion.hay_ia():
-        logger.warning("Sin clave de IA: uso puntuación por reglas.")
-        return _analisis_por_reglas(datos_negocio)
+        return None
 
     try:
         if configuracion.PROVEEDOR_IA == "openai":
@@ -23,10 +31,21 @@ def analizar_negocio(datos_negocio: dict) -> Analisis:
         else:
             from aplicacion.ia import claude as proveedor
 
-        return Analisis(**proveedor.analizar(datos_negocio))
+        kwargs = {"encabezado": encabezado} if encabezado else {}
+        return proveedor.analizar(datos, esquema, instrucciones, **kwargs)
     except Exception as error:  # noqa: BLE001
-        logger.error("Falló el análisis con IA (%s). Uso reglas.", error)
+        logger.error("Falló la llamada a IA (%s).", error)
+        return None
+
+
+def analizar_negocio(datos_negocio: dict) -> Analisis:
+    from aplicacion.ia.esquema import ESQUEMA_ANALISIS, INSTRUCCIONES
+
+    resultado = analizar_con_esquema(datos_negocio, ESQUEMA_ANALISIS, INSTRUCCIONES)
+    if resultado is None:
+        logger.warning("Sin clave de IA o falló el análisis: uso puntuación por reglas.")
         return _analisis_por_reglas(datos_negocio)
+    return Analisis(**resultado)
 
 
 def _analisis_por_reglas(datos: dict) -> Analisis:

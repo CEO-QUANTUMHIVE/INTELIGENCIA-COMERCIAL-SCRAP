@@ -1,11 +1,11 @@
-"""Análisis con Claude (Anthropic)."""
+"""Análisis con Claude (Anthropic). Mismo contrato que openai.py."""
 
 import json
 
 import anthropic
 
 from aplicacion import configuracion
-from aplicacion.ia.esquema import ESQUEMA_ANALISIS, INSTRUCCIONES, armar_prompt
+from aplicacion.ia.esquema import armar_prompt
 
 _cliente: anthropic.Anthropic | None = None
 
@@ -17,16 +17,17 @@ def _obtener_cliente() -> anthropic.Anthropic:
     return _cliente
 
 
-def analizar(datos_negocio: dict) -> dict:
+def analizar(datos: dict, esquema: dict, instrucciones: str, encabezado: str | None = None) -> dict:
+    contenido = armar_prompt(datos, encabezado) if encabezado else armar_prompt(datos)
     respuesta = _obtener_cliente().messages.create(
         model=configuracion.MODELO_CLAUDE,
         max_tokens=4000,
-        system=INSTRUCCIONES,
+        system=instrucciones,
         output_config={
             "effort": "low",
-            "format": {"type": "json_schema", "schema": ESQUEMA_ANALISIS},
+            "format": {"type": "json_schema", "schema": esquema},
         },
-        messages=[{"role": "user", "content": armar_prompt(datos_negocio)}],
+        messages=[{"role": "user", "content": contenido}],
     )
 
     if respuesta.stop_reason == "refusal":

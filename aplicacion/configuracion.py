@@ -31,6 +31,10 @@ PAUSA_ENTRE_NEGOCIOS = float(os.getenv("PAUSA_ENTRE_NEGOCIOS", "1.5"))
 
 # API
 PUERTO = int(os.getenv("PUERTO", "8000"))
+# Token que deben mandar los que consumen la API (Fábrica de Webs, Fábrica de
+# Agentes, etc.) como "Authorization: Bearer <token>". Vacío = sin auth, para
+# no trabar el desarrollo local; en producción hay que setearlo.
+TOKEN_INTERNO = os.getenv("TOKEN_INTERNO", "")
 
 
 def hay_supabase() -> bool:

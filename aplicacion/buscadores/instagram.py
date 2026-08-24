@@ -66,6 +66,7 @@ def leer(url_o_usuario: str) -> dict:
         "publicaciones": None,
         "bio": None,
         "activo": None,
+        "logo_url": None,
     }
 
     try:
@@ -78,6 +79,10 @@ def leer(url_o_usuario: str) -> dict:
 
     if pagina is None:
         return resultado
+
+    for elemento in pagina.css('meta[property="og:image"]'):
+        resultado["logo_url"] = elemento.attrib.get("content")
+        break
 
     descripcion = None
     for elemento in pagina.css('meta[property="og:description"]'):

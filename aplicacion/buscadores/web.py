@@ -87,6 +87,22 @@ def _fuentes_de_scripts(pagina) -> list[str]:
     return salida
 
 
+def _logo(pagina, url: str) -> str | None:
+    """og:image si existe (mejor calidad); si no, el favicon."""
+    for elemento in pagina.css('meta[property="og:image"]'):
+        href = elemento.attrib.get("content")
+        if href:
+            return urljoin(url, href)
+
+    for selector in ('link[rel="icon"]', 'link[rel="shortcut icon"]', 'link[rel="apple-touch-icon"]'):
+        for elemento in pagina.css(selector):
+            href = elemento.attrib.get("href")
+            if href:
+                return urljoin(url, href)
+
+    return None
+
+
 def _normalizar(url: str) -> str:
     if not url.startswith(("http://", "https://")):
         return "https://" + url
@@ -110,6 +126,7 @@ def leer(url: str) -> dict:
         "facebook": None,
         "linkedin": None,
         "texto_web": None,
+        "logo_url": None,
     }
 
     pagina = _traer(url)
@@ -121,9 +138,12 @@ def leer(url: str) -> dict:
     if resultado["es_plataforma"]:
         # El negocio no tiene web propia: solo un perfil en una plataforma.
         # Sí sabemos que usa reservas online. Todo lo demás de esta página es
-        # de la plataforma, así que no lo atribuimos al negocio.
+        # de la plataforma (incluida su imagen), así que no la atribuimos al
+        # negocio.
         resultado["tiene_reservas_online"] = True
         return resultado
+
+    resultado["logo_url"] = _logo(pagina, url)
 
     texto = (pagina.get_all_text() or "")[:20000]
     enlaces = _enlaces(pagina)

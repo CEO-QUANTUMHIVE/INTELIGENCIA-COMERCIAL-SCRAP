@@ -20,7 +20,13 @@ def leer(url: str) -> dict:
     if not url.startswith("http"):
         url = "https://www.facebook.com/" + url.strip().lstrip("/")
 
-    resultado = {"facebook": url, "nombre": None, "descripcion": None, "existe": False}
+    resultado = {
+        "facebook": url,
+        "nombre": None,
+        "descripcion": None,
+        "existe": False,
+        "logo_url": None,
+    }
 
     try:
         from scrapling.fetchers import StealthyFetcher
@@ -35,6 +41,7 @@ def leer(url: str) -> dict:
 
     resultado["nombre"] = _meta(pagina, "og:title")
     resultado["descripcion"] = _meta(pagina, "og:description")
+    resultado["logo_url"] = _meta(pagina, "og:image")
     resultado["existe"] = bool(resultado["nombre"])
     return resultado
 
