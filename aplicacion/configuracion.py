@@ -20,6 +20,10 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 MODELO_CLAUDE = os.getenv("MODELO_CLAUDE", "claude-opus-5")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 MODELO_OPENAI = os.getenv("MODELO_OPENAI", "gpt-5")
+# Para usar un proveedor compatible con la API de OpenAI (ej. Groq) en vez
+# de OpenAI real: setear esto a su base_url y poner su API key en
+# OPENAI_API_KEY. Vacío = OpenAI de verdad.
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "").strip() or None
 
 # Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")

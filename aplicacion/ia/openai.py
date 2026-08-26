@@ -13,7 +13,7 @@ _cliente: OpenAI | None = None
 def _obtener_cliente() -> OpenAI:
     global _cliente
     if _cliente is None:
-        _cliente = OpenAI(api_key=configuracion.OPENAI_API_KEY)
+        _cliente = OpenAI(api_key=configuracion.OPENAI_API_KEY, base_url=configuracion.OPENAI_BASE_URL)
     return _cliente
 
 
