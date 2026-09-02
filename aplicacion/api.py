@@ -97,6 +97,7 @@ def salud():
         "proveedor_ia": configuracion.PROVEEDOR_IA,
         "ia_configurada": configuracion.hay_ia(),
         "supabase_configurado": configuracion.hay_supabase(),
+        "instagram_apify_configurado": configuracion.hay_apify_instagram(),
     }
 
 
