@@ -8,6 +8,7 @@ puntuar el prospecto.
 
 import logging
 import re
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,21 @@ def _a_numero(texto: str) -> int | None:
         return None
 
 
+def logo_de_perfil(valor: str | None) -> str | None:
+    """Acepta fotos de perfil, no recursos genéricos de la interfaz de Meta."""
+    if not valor:
+        return None
+    parsed = urlparse(valor)
+    if parsed.scheme != "https" or not parsed.hostname:
+        return None
+    host = parsed.hostname.lower()
+    if host == "static.cdninstagram.com":
+        return None
+    if host.endswith(".cdninstagram.com") and parsed.path.startswith("/rsrc.php"):
+        return None
+    return valor
+
+
 def leer(url_o_usuario: str) -> dict:
     usuario = usuario_desde_url(url_o_usuario) or url_o_usuario.strip().lstrip("@")
     url = f"https://www.instagram.com/{usuario}/"
@@ -80,10 +96,6 @@ def leer(url_o_usuario: str) -> dict:
     if pagina is None:
         return resultado
 
-    for elemento in pagina.css('meta[property="og:image"]'):
-        resultado["logo_url"] = elemento.attrib.get("content")
-        break
-
     descripcion = None
     for elemento in pagina.css('meta[property="og:description"]'):
         descripcion = elemento.attrib.get("content")
@@ -92,11 +104,18 @@ def leer(url_o_usuario: str) -> dict:
     if not descripcion:
         return resultado
 
-    resultado["bio"] = descripcion
     encontrado = PATRON_NUMEROS.search(descripcion)
-    if encontrado:
-        resultado["seguidores"] = _a_numero(encontrado.group(1))
-        resultado["publicaciones"] = _a_numero(encontrado.group(2))
+    if not encontrado:
+        logger.info("Instagram no entregó metadatos públicos de %s", usuario)
+        return resultado
+
+    resultado["bio"] = descripcion
+    resultado["seguidores"] = _a_numero(encontrado.group(1))
+    resultado["publicaciones"] = _a_numero(encontrado.group(2))
+
+    for elemento in pagina.css('meta[property="og:image"]'):
+        resultado["logo_url"] = logo_de_perfil(elemento.attrib.get("content"))
+        break
 
     seguidores = resultado["seguidores"] or 0
     publicaciones = resultado["publicaciones"] or 0

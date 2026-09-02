@@ -25,6 +25,14 @@ def test_numero_invalido():
     assert instagram._a_numero("muchos") is None
 
 
+def test_descarta_el_logo_generico_de_instagram():
+    assert instagram.logo_de_perfil(
+        "https://static.cdninstagram.com/rsrc.php/v4/yD/r/R0fBIMurK8v.png"
+    ) is None
+    logo_real = "https://instagram.fabc1-1.fna.fbcdn.net/v/t51/perfil.jpg"
+    assert instagram.logo_de_perfil(logo_real) == logo_real
+
+
 def test_extrae_seguidores_y_publicaciones():
     descripcion = "1,234 Followers, 567 Following, 89 Posts - See Instagram photos"
     encontrado = instagram.PATRON_NUMEROS.search(descripcion)
