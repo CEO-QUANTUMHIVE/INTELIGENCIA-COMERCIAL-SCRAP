@@ -32,6 +32,11 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 # Scraping
 NAVEGADOR_OCULTO = _bool("NAVEGADOR_OCULTO", True)
 PAUSA_ENTRE_NEGOCIOS = float(os.getenv("PAUSA_ENTRE_NEGOCIOS", "1.5"))
+APIFY_TOKEN = os.getenv("APIFY_TOKEN", "").strip()
+APIFY_INSTAGRAM_ACTOR = os.getenv(
+    "APIFY_INSTAGRAM_ACTOR", "apify~instagram-scraper"
+).strip()
+APIFY_INSTAGRAM_TIMEOUT = float(os.getenv("APIFY_INSTAGRAM_TIMEOUT", "120"))
 
 # API
 PUERTO = int(os.getenv("PUERTO", "8000"))
@@ -74,3 +79,8 @@ def hay_ia() -> bool:
     if PROVEEDOR_IA == "openai":
         return _tiene_valor_real(OPENAI_API_KEY)
     return _tiene_valor_real(ANTHROPIC_API_KEY)
+
+
+def hay_apify_instagram() -> bool:
+    """Indica si el proveedor pago de Instagram puede usarse."""
+    return _tiene_valor_real(APIFY_TOKEN) and bool(APIFY_INSTAGRAM_ACTOR)

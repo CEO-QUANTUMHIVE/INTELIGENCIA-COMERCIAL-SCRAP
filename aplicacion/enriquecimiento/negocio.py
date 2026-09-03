@@ -39,11 +39,9 @@ def enriquecer(negocio: Negocio) -> Negocio:
     negocio.whatsapp = negocio.whatsapp or contactos.a_whatsapp(negocio.telefono)
 
     if negocio.instagram:
-        try:
-            datos_ig = instagram.leer(negocio.instagram)
-            negocio.instagram = datos_ig["instagram"]
-        except Exception as error:  # noqa: BLE001
-            logger.info("Instagram falló para %s: %s", negocio.nombre, error)
+        # Acá solo necesitamos canonizar la URL. La lectura completa se hace una
+        # vez en investigar_cliente(), para no facturar dos consultas de Apify.
+        negocio.instagram = instagram.normalizar_url(negocio.instagram)
 
     return negocio
 

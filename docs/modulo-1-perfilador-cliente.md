@@ -59,7 +59,8 @@ Centro de Inteligencia Comercial (este repo)
         ├─ 2. Si hay web → la visita (HTTP directo, o navegador stealth si el sitio bloquea)
         │       └─ saca: email, WhatsApp, redes, tecnología del sitio, si tiene chatbot,
         │          si tiene reservas online, el logo (og:image o favicon), y el texto
-        ├─ 3. Si hay instagram → lee bio, cantidad de seguidores y foto de perfil (público)
+        ├─ 3. Si hay instagram → consulta Apify desde el backend para obtener bio,
+        │       seguidores y foto de perfil; si Apify falla, usa el lector público anterior
         ├─ 4. Si hay facebook → lee nombre, descripción e imagen de la página (público)
         ├─ 5. Con todo el texto reunido, le pide a la IA (Claude u OpenAI, lo que
         │       tenga configurado QuantumHive) que arme: servicios, precios, horarios,
@@ -222,6 +223,20 @@ públicamente", no "falló algo". El sistema tiene la regla explícita de no
 inventar precios, servicios ni identidad visual que el cliente no tiene —
 mejor un campo vacío para completar a mano con el cliente que un dato falso
 en su web.
+
+### Proveedor de Instagram
+
+La integración usa por defecto `apify/instagram-scraper`, mantenido por
+Apify. Ejecuta `resultsType=details` y exactamente una URL por alta. El token
+se envía en `Authorization: Bearer`, nunca en la URL, la respuesta pública ni
+el navegador. Si Apify no está configurado o falla, el onboarding continúa
+con el lector público anterior y puede devolver campos vacíos.
+
+Variables exclusivas del backend:
+
+- `APIFY_TOKEN`: token de Apify (obligatorio para activar el proveedor).
+- `APIFY_INSTAGRAM_ACTOR`: por defecto `apify~instagram-scraper`.
+- `APIFY_INSTAGRAM_TIMEOUT`: por defecto 120 segundos.
 
 ---
 
