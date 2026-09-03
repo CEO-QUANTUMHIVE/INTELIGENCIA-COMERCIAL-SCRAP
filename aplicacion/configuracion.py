@@ -41,11 +41,36 @@ PUERTO = int(os.getenv("PUERTO", "8000"))
 TOKEN_INTERNO = os.getenv("TOKEN_INTERNO", "")
 
 
+def _tiene_valor_real(valor: str | None) -> bool:
+    """Distingue una credencial real de los marcadores incluidos en `.env`.
+
+    Los ejemplos permiten arrancar el proyecto, pero no deben hacer que `/salud`
+    anuncie IA o Supabase como configurados ni provocar llamadas externas con
+    claves del tipo ``tu_clave_aqui``.
+    """
+    if not valor or not valor.strip():
+        return False
+
+    normalizado = valor.strip().lower().replace("-", "_").replace(" ", "_")
+    marcadores = (
+        "tu_clave",
+        "tu_url",
+        "pega_",
+        "aqui",
+        "example",
+        "ejemplo",
+        "your_key",
+        "your_url",
+        "changeme",
+    )
+    return not any(marcador in normalizado for marcador in marcadores)
+
+
 def hay_supabase() -> bool:
-    return bool(SUPABASE_URL and SUPABASE_KEY)
+    return _tiene_valor_real(SUPABASE_URL) and _tiene_valor_real(SUPABASE_KEY)
 
 
 def hay_ia() -> bool:
     if PROVEEDOR_IA == "openai":
-        return bool(OPENAI_API_KEY)
-    return bool(ANTHROPIC_API_KEY)
+        return _tiene_valor_real(OPENAI_API_KEY)
+    return _tiene_valor_real(ANTHROPIC_API_KEY)

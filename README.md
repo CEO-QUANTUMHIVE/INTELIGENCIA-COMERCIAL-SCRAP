@@ -113,6 +113,9 @@ Documentación interactiva en <http://localhost:8000/docs>.
 | Método | Ruta | Qué hace | Requiere token |
 |---|---|---|---|
 | `GET` | `/salud` | Verifica qué está configurado | No |
+| `GET` | `/api/recursos` | Lista el catálogo estático de créditos y beneficios | No |
+| `POST` | `/api/recursos/postular` | Genera el borrador de una postulación | Sí |
+| `POST` | `/api/recursos/cazar-web` | Busca oportunidades nuevas en la web | Sí |
 | `POST` | `/buscar` | Busca negocios (en segundo plano, devuelve `tarea_id`) | Sí |
 | `GET` | `/tareas/{id}` | Estado y resultado de la búsqueda | Sí |
 | `POST` | `/investigar` | Investiga un negocio (responde directo) | Sí |
@@ -120,11 +123,13 @@ Documentación interactiva en <http://localhost:8000/docs>.
 | `POST` | `/personas` | Decisores B2B | Sí |
 | `GET` | `/negocios` | Mejores prospectos guardados | Sí |
 
-Si configurás `TOKEN_INTERNO` en `.env`, todo lo que no sea `/salud` exige el
-header `Authorization: Bearer <TOKEN_INTERNO>` — así es como la Fábrica de
-Webs y la Fábrica de Agentes (u otro backend interno) consumen esta API sin
-dejarla abierta. Con `TOKEN_INTERNO` vacío (default en desarrollo local) no
-pide nada.
+Si configurás `TOKEN_INTERNO` en `.env`, las operaciones que disparan IA,
+scraping o acceden a datos internos exigen el header
+`Authorization: Bearer <TOKEN_INTERNO>` — así es como la Fábrica de Webs y la
+Fábrica de Agentes consumen esta API sin dejarla abierta. El catálogo estático
+`GET /api/recursos` es público para que la landing pueda mostrar los programas
+sin exponer el token. Con `TOKEN_INTERNO` vacío (default en desarrollo local)
+las operaciones protegidas tampoco piden token.
 
 ```bash
 curl -X POST http://localhost:8000/buscar \
@@ -203,9 +208,11 @@ falla), `ia/__init__.py` puntúa con reglas simples para el scoring comercial, y
 inventar servicios o precios que el cliente no tiene. Sirve para probar el
 pipeline entero gratis y evita que la IA le mienta a la Fábrica de Webs.
 
-**La API no está abierta por defecto.** `TOKEN_INTERNO` en `.env` protege
-todo salvo `/salud`. Vacío en desarrollo local; setealo antes de que la
-Fábrica de Webs o la Fábrica de Agentes la llamen desde afuera.
+**La API no está abierta por defecto.** `TOKEN_INTERNO` en `.env` protege las
+operaciones internas y las que consumen scraping o IA. Sólo `/salud` y el
+catálogo estático `/api/recursos` son públicos. Vacío en desarrollo local;
+setealo antes de que la Fábrica de Webs o la Fábrica de Agentes la llamen
+desde afuera.
 
 **El modelo por defecto es `claude-opus-5`.** Para analizar cientos de negocios
 por corrida, poné `MODELO_CLAUDE=claude-sonnet-5` en `.env`: mismo contrato,

@@ -17,6 +17,18 @@ from aplicacion.modelos import (
     PaquetePerfilCliente,
     Persona,
 )
+from aplicacion.modelos_recursos import (
+    FiltroRecursos,
+    PeticionPostulacion,
+    Recurso,
+    RespuestaPostulacion,
+)
+from aplicacion.recursos import (
+    buscar_oportunidades_web,
+    filtrar_recursos,
+    generar_postulacion,
+    obtener_recurso,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +194,6 @@ def investigar_cliente(
     supabase.guardar_negocio(ficha, resultado.analisis, es_cliente=True)
     return paquete
 
-
 # ─── Flujo D: decisores B2B ──────────────────────────────────────────
 
 
@@ -199,3 +210,25 @@ def buscar_personas(
             "personas", {"rubro": rubro, "ciudad": ciudad}, len(personas)
         )
     return personas
+
+
+# ─── Flujo E: cazador de recursos, créditos y beneficios ─────────────
+
+
+def listar_recursos(filtro: FiltroRecursos) -> list[Recurso]:
+    """Obtiene y filtra recursos del catálogo (créditos cloud, devs, .edu, B2B)."""
+    return filtrar_recursos(filtro)
+
+
+def cazar_recursos_web(
+    termino: str = "creditos startups cloud 2026",
+    pais: str | None = None,
+    cantidad: int = 10,
+) -> list[Recurso]:
+    """Busca en vivo convocatorias abiertas y grants en la web."""
+    return buscar_oportunidades_web(termino_busqueda=termino, pais_o_region=pais, cantidad=cantidad)
+
+
+def generar_postulacion_recurso(peticion: PeticionPostulacion) -> RespuestaPostulacion:
+    """Genera respuestas y pitch a medida para formularios de postulación."""
+    return generar_postulacion(peticion)

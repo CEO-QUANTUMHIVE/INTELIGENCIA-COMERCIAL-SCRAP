@@ -37,11 +37,12 @@ del contenido del sitio para completar/corregir, no para arrancar de cero.
 **Qué no tienen que hacer:** scraping propio, llamadas a IA propias, ni
 manejar Instagram/Facebook/Maps — todo eso ya lo resuelve este módulo.
 
-**Estado:** funciona hoy, corriendo localmente en este repo. Para activarlo
-en producción falta un solo paso de QuantumHive: desplegarlo en algún lado
-accesible por HTTP (hay `Dockerfile` y `docker-compose.yml` ya armados en la
-raíz de este repo) y pasarle la URL + token a Fábrica de Webs. Ver
-[sección 6](#6-checklist-de-activación).
+**Estado:** el servicio base está en Cloud Run
+(`https://perfilador-clientes-854335368640.us-east1.run.app`) con IA y
+Supabase configurados, pero la revisión publicada todavía es anterior al
+Dashboard y al Cazador de Recursos: la raíz devuelve 404 y esas rutas no
+figuran en el OpenAPI de producción. Falta desplegar esta copia de trabajo.
+Ver [sección 6](#6-checklist-de-activación).
 
 ---
 
@@ -242,14 +243,15 @@ scrapear el mismo sitio varias veces en paralelo sin necesidad.
 
 **De parte de QuantumHive (para dejar el servicio listo):**
 
-- [ ] Desplegar este repo en algún host accesible por HTTPS (`docker-compose up`
-      ya arma la imagen; falta decidir dónde correrla — VPS, Railway, Fly.io,
-      lo que se use para el resto de la infraestructura)
-- [ ] Setear `TOKEN_INTERNO` en el `.env` de ese despliegue (un string
-      random largo, por ejemplo `openssl rand -hex 32`)
-- [ ] Setear `ANTHROPIC_API_KEY` o `OPENAI_API_KEY` (sin esto, el endpoint
-      igual responde, pero `servicios`/`precios`/`horarios`/`preguntas_frecuentes`/
-      `competidores` vienen siempre vacíos — solo queda el scraping crudo)
+- [x] Servicio base desplegado en Cloud Run: `perfilador-clientes`, proyecto
+      `bubbly-stone-502214-u7`, región `us-east1` (junto al resto de la
+      infraestructura de QuantumHive)
+- [ ] Publicar una revisión nueva con el Dashboard y el Cazador de Recursos
+- [x] `TOKEN_INTERNO` seteado (Secret Manager)
+- [x] IA configurada (proveedor compatible con la API de OpenAI, vía
+      `OPENAI_BASE_URL`) — `servicios`/`precios`/`horarios`/
+      `preguntas_frecuentes`/`competidores` se completan de verdad
+- [x] Supabase conectado — cada llamada queda guardada, con historial
 - [ ] Pasarle a Fábrica de Webs: la URL pública y el valor de `TOKEN_INTERNO`
       (por un canal seguro, no por chat en texto plano si se puede evitar)
 

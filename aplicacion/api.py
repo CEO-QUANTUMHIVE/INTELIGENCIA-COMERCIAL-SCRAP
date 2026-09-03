@@ -10,10 +10,19 @@ import secrets
 import uuid
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException
+from fastapi.responses import HTMLResponse
 
 from aplicacion import configuracion, coordinador
 from aplicacion.base_datos import supabase
 from aplicacion.modelos import PeticionBuscar, PeticionInvestigar, PeticionPersonas
+from aplicacion.modelos_recursos import (
+    CategoriaRecurso,
+    FiltroRecursos,
+    PeticionPostulacion,
+    Recurso,
+    RespuestaPostulacion,
+)
+from aplicacion.ui.dashboard_html import DASHBOARD_HTML
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,8 +32,8 @@ logging.basicConfig(
 
 app = FastAPI(
     title="Centro de Inteligencia Comercial — QuantumHive",
-    version="0.1.0",
-    description="Encuentra negocios, los investiga y dice qué venderles.",
+    version="0.2.0",
+    description="Encuentra negocios, los investiga, dice qué venderles y caza créditos/recursos gratis.",
 )
 
 
@@ -90,6 +99,13 @@ def _correr_busqueda(tarea_id: str, peticion: PeticionBuscar) -> None:
         _actualizar_tarea(tarea_id, "fallida", error=str(error))
 
 
+@app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
+def panel_control():
+    """Dashboard visual unificado para operar el Centro de Inteligencia Comercial."""
+    return HTMLResponse(content=DASHBOARD_HTML)
+
+
 @app.get("/salud")
 def salud():
     return {
@@ -98,6 +114,54 @@ def salud():
         "ia_configurada": configuracion.hay_ia(),
         "supabase_configurado": configuracion.hay_supabase(),
     }
+
+
+# ─── Endpoints de Recursos, Créditos y Beneficios ────────────────────
+
+
+@app.get("/api/recursos", response_model=list[Recurso])
+def obtener_recursos(
+    categoria: CategoriaRecurso | None = None,
+    tiene_correo_estudiante: bool = False,
+    tiene_correo_corporativo: bool = False,
+    texto_busqueda: str | None = None,
+):
+    """Lista el catálogo público de créditos, beneficios y programas educativos.
+
+    Es una consulta de datos estáticos y no dispara scraping ni consumo de IA.
+    Las operaciones que sí consumen recursos continúan protegidas por token.
+    """
+    filtro = FiltroRecursos(
+        categoria=categoria,
+        tiene_correo_estudiante=tiene_correo_estudiante,
+        tiene_correo_corporativo=tiene_correo_corporativo,
+        texto_busqueda=texto_busqueda,
+    )
+    return coordinador.listar_recursos(filtro)
+
+
+@app.post("/api/recursos/cazar-web", response_model=list[Recurso], dependencies=[Depends(verificar_token)])
+def cazar_recursos(
+    termino: str = "creditos startups cloud 2026",
+    pais: str | None = None,
+    cantidad: int = 10,
+):
+    """Busca convocatorias y oportunidades abiertas en la web en vivo."""
+    return coordinador.cazar_recursos_web(termino=termino, pais=pais, cantidad=cantidad)
+
+
+@app.post("/api/recursos/postular", response_model=RespuestaPostulacion, dependencies=[Depends(verificar_token)])
+def postular_recurso(peticion: PeticionPostulacion):
+    """Genera respuestas, pitch y checklist técnico para postular a un programa con éxito."""
+    if not peticion.nombre_proyecto or not peticion.descripcion_proyecto or not peticion.correo_a_usar:
+        raise HTTPException(
+            status_code=400,
+            detail="nombre_proyecto, descripcion_proyecto y correo_a_usar son obligatorios.",
+        )
+    return coordinador.generar_postulacion_recurso(peticion)
+
+
+# ─── Endpoints de Prospección y Clientes ──────────────────────────────
 
 
 @app.post("/buscar", dependencies=[Depends(verificar_token)])

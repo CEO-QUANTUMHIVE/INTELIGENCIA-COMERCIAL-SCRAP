@@ -21,6 +21,20 @@ def test_sin_ia_configurada_devuelve_none(monkeypatch):
     assert resultado is None
 
 
+def test_marcador_de_env_no_cuenta_como_ia_configurada(monkeypatch):
+    monkeypatch.setattr(configuracion, "PROVEEDOR_IA", "openai")
+    monkeypatch.setattr(configuracion, "OPENAI_API_KEY", "tu_clave_openai_aqui")
+
+    assert configuracion.hay_ia() is False
+
+
+def test_marcadores_de_env_no_cuentan_como_supabase(monkeypatch):
+    monkeypatch.setattr(configuracion, "SUPABASE_URL", "tu_url_de_supabase")
+    monkeypatch.setattr(configuracion, "SUPABASE_KEY", "tu_clave_supabase_aqui")
+
+    assert configuracion.hay_supabase() is False
+
+
 def test_llama_al_proveedor_configurado_y_devuelve_su_resultado(monkeypatch):
     monkeypatch.setattr(configuracion, "OPENAI_API_KEY", "clave-de-prueba")
     monkeypatch.setattr(configuracion, "PROVEEDOR_IA", "openai")
