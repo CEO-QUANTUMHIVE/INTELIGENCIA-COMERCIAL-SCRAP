@@ -34,6 +34,7 @@ ESQUEMA_POSTULACION = {
         "arquitectura_tecnica",
         "checklist_antes_de_enviar",
     ],
+    "additionalProperties": False,
 }
 
 PROMPT_POSTULACION = """Sos un asesor experto en postulaciones exitosas a programas de Startups, Créditos Cloud (AWS, Microsoft, Google Cloud, NVIDIA) y Beneficios de Developers/Educación.

@@ -131,6 +131,13 @@ Fábrica de Agentes consumen esta API sin dejarla abierta. El catálogo estátic
 sin exponer el token. Con `TOKEN_INTERNO` vacío (default en desarrollo local)
 las operaciones protegidas tampoco piden token.
 
+El cazador prioriza `APIFY_BUSQUEDA_ACTOR` (por defecto, el Actor oficial
+`apify/google-search-scraper`) y consulta una sola página por búsqueda. El
+parámetro `APIFY_BUSQUEDA_MAX_COSTO_USD` limita cada ejecución; Apify exige un
+mínimo de `0.50` para ese tope, aunque una consulta normal consume solo una
+fracción de ese importe. Si Apify no está configurado o falla, se intenta el
+lector público de DuckDuckGo como respaldo.
+
 ```bash
 curl -X POST http://localhost:8000/buscar \
   -H "Content-Type: application/json" \

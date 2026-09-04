@@ -114,6 +114,7 @@ def salud():
         "ia_configurada": configuracion.hay_ia(),
         "supabase_configurado": configuracion.hay_supabase(),
         "instagram_apify_configurado": configuracion.hay_apify_instagram(),
+        "busqueda_recursos_apify_configurada": configuracion.hay_apify_busqueda(),
     }
 
 

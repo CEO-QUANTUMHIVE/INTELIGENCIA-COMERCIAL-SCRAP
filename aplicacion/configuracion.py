@@ -37,6 +37,13 @@ APIFY_INSTAGRAM_ACTOR = os.getenv(
     "APIFY_INSTAGRAM_ACTOR", "apify~instagram-scraper"
 ).strip()
 APIFY_INSTAGRAM_TIMEOUT = float(os.getenv("APIFY_INSTAGRAM_TIMEOUT", "120"))
+APIFY_BUSQUEDA_ACTOR = os.getenv(
+    "APIFY_BUSQUEDA_ACTOR", "apify~google-search-scraper"
+).strip()
+APIFY_BUSQUEDA_TIMEOUT = float(os.getenv("APIFY_BUSQUEDA_TIMEOUT", "120"))
+APIFY_BUSQUEDA_MAX_COSTO_USD = float(
+    os.getenv("APIFY_BUSQUEDA_MAX_COSTO_USD", "0.50")
+)
 
 # API
 PUERTO = int(os.getenv("PUERTO", "8000"))
@@ -84,3 +91,8 @@ def hay_ia() -> bool:
 def hay_apify_instagram() -> bool:
     """Indica si el proveedor pago de Instagram puede usarse."""
     return _tiene_valor_real(APIFY_TOKEN) and bool(APIFY_INSTAGRAM_ACTOR)
+
+
+def hay_apify_busqueda() -> bool:
+    """Indica si el buscador web de recursos puede ejecutar su Actor."""
+    return _tiene_valor_real(APIFY_TOKEN) and bool(APIFY_BUSQUEDA_ACTOR)

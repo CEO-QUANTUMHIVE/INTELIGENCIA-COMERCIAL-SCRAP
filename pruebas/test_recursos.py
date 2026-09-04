@@ -15,9 +15,21 @@ from aplicacion.recursos.catalogo import (
     filtrar_recursos,
     obtener_recurso,
 )
-from aplicacion.recursos.postulador import generar_postulacion
+from aplicacion.recursos import cazador
+from aplicacion.recursos.postulador import ESQUEMA_POSTULACION, generar_postulacion
 
 cliente = TestClient(app)
+
+
+class _RespuestaApifyFalsa:
+    def __init__(self, datos):
+        self._datos = datos
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._datos
 
 
 def test_catalogo_no_vacio():
@@ -91,6 +103,88 @@ def test_generador_postulacion_estudiante(monkeypatch):
     assert len(resultado.checklist_antes_de_enviar) >= 1
     assert "azure" in resultado.url_postulacion.lower()
     assert resultado.generado_con_ia is False
+
+
+def test_esquema_postulacion_es_valido_para_modo_estricto():
+    assert ESQUEMA_POSTULACION["additionalProperties"] is False
+    assert set(ESQUEMA_POSTULACION["required"]) == set(
+        ESQUEMA_POSTULACION["properties"]
+    )
+
+
+def test_cazador_usa_apify_y_normaliza_resultados(monkeypatch):
+    monkeypatch.setattr(cazador.configuracion, "APIFY_TOKEN", "token-real")
+    monkeypatch.setattr(
+        cazador.configuracion, "APIFY_BUSQUEDA_ACTOR", "apify~google-search-scraper"
+    )
+    monkeypatch.setattr(cazador.configuracion, "APIFY_BUSQUEDA_TIMEOUT", 30)
+    monkeypatch.setattr(cazador.configuracion, "APIFY_BUSQUEDA_MAX_COSTO_USD", 0.50)
+    llamada = {}
+
+    def post(url, **kwargs):
+        llamada.update({"url": url, **kwargs})
+        return _RespuestaApifyFalsa(
+            [
+                {
+                    "organicResults": [
+                        {
+                            "title": "Azure créditos para startups",
+                            "url": "https://example.com/azure-startups",
+                            "description": "Programa cloud para empresas y founders.",
+                        },
+                        {
+                            "title": "GitHub Student Pack",
+                            "url": "https://example.org/student-pack",
+                            "description": "Beneficios educativos para estudiantes.",
+                        },
+                    ]
+                }
+            ]
+        )
+
+    monkeypatch.setattr(cazador.httpx, "post", post)
+    monkeypatch.setattr(
+        cazador, "_buscar_con_duckduckgo", lambda *_: pytest.fail("no debía usar respaldo")
+    )
+
+    resultados = cazador.buscar_oportunidades_web(
+        "creditos cloud", pais_o_region="Argentina", cantidad=2
+    )
+
+    assert len(resultados) == 2
+    assert llamada["headers"]["Authorization"] == "Bearer token-real"
+    assert llamada["json"]["maxPagesPerQuery"] == 1
+    assert llamada["params"]["maxItems"] == 1
+    assert resultados[0].proveedor == "Google Search / Apify"
+    assert resultados[0].categoria == CategoriaRecurso.CLOUD
+    assert resultados[1].correo_requerido == TipoCorreoRequerido.ESTUDIANTE
+    assert resultados[0].id == cazador._crear_recurso(
+        "Azure créditos para startups",
+        "Programa cloud para empresas y founders.",
+        "https://example.com/azure-startups",
+        "Google Search / Apify",
+    ).id
+
+
+def test_cazador_degrada_a_respaldo_si_apify_falla(monkeypatch):
+    monkeypatch.setattr(cazador.configuracion, "APIFY_TOKEN", "token-real")
+    monkeypatch.setattr(
+        cazador.configuracion, "APIFY_BUSQUEDA_ACTOR", "apify~google-search-scraper"
+    )
+    monkeypatch.setattr(
+        cazador, "_buscar_con_apify", lambda *_: (_ for _ in ()).throw(RuntimeError("falló"))
+    )
+    esperado = [
+        cazador._crear_recurso(
+            "Convocatoria abierta",
+            "Subsidio para innovación",
+            "https://example.net/convocatoria",
+            "DuckDuckGo",
+        )
+    ]
+    monkeypatch.setattr(cazador, "_buscar_con_duckduckgo", lambda *_: esperado)
+
+    assert cazador.buscar_oportunidades_web(cantidad=1) == esperado
 
 
 def test_generador_postulacion_startup_corp(monkeypatch):
