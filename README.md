@@ -122,6 +122,7 @@ Documentación interactiva en <http://localhost:8000/docs>.
 | `POST` | `/clientes/investigar` | Paquete para Fábrica de Webs / Agentes | Sí |
 | `POST` | `/personas` | Decisores B2B | Sí |
 | `GET` | `/negocios` | Mejores prospectos guardados | Sí |
+| `POST` | `/contactar/{negocio_id}` | Envía email o prepara contacto manual en Chatwoot | Sí |
 
 Si configurás `TOKEN_INTERNO` en `.env`, las operaciones que disparan IA,
 scraping o acceden a datos internos exigen el header
@@ -137,6 +138,13 @@ parámetro `APIFY_BUSQUEDA_MAX_COSTO_USD` limita cada ejecución; Apify exige un
 mínimo de `0.50` para ese tope, aunque una consulta normal consume solo una
 fracción de ese importe. Si Apify no está configurado o falla, se intenta el
 lector público de DuckDuckGo como respaldo.
+
+El outreach usa Chatwoot como registro auditable. `CHATWOOT_INBOX_EMAIL_ID`
+habilita el envío automático por email; `CHATWOOT_INBOX_MANUAL_ID` recibe
+notas privadas y enlaces para WhatsApp, Instagram o Facebook. Esos tres
+canales nunca se marcan como enviados automáticamente cuando solo conocemos
+un teléfono o una URL pública. El cliente reintenta una vez los errores
+temporales y evita duplicar un mensaje si la conversación ya existe.
 
 ```bash
 curl -X POST http://localhost:8000/buscar \
@@ -247,8 +255,8 @@ corriéndolo.
    [`docs/modulo-1-perfilador-cliente.md`](docs/modulo-1-perfilador-cliente.md).
    Falta que Fábrica de Webs (generar demo + screenshot) y Fábrica de Agentes
    (knowledge base del cliente) lo consuman de su lado — vive en esos repos.
-2. Outreach: WhatsApp y email primero, Instagram/Facebook por la API oficial
-   de Meta vía Chatwoot (ver `docs/superpowers/specs/2026-08-17-outreach-chatwoot-design.md`)
+2. Outreach: backend implementado sobre Chatwoot; falta conectar la instancia
+   y sus inboxes reales (ver `docs/superpowers/specs/2026-08-17-outreach-chatwoot-design.md`)
 3. Cazador de inversión y créditos: mismo motor, nuevo dominio (oportunidades
    de capital en vez de prospectos comerciales) + redactor de propuestas
 4. LinkedIn Lead Gen Forms + Lead Sync API

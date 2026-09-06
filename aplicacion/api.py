@@ -22,6 +22,8 @@ from aplicacion.modelos_recursos import (
     Recurso,
     RespuestaPostulacion,
 )
+from aplicacion.outreach import servicio as outreach
+from aplicacion.outreach.modelos import ResultadoOutreach
 from aplicacion.ui.dashboard_html import DASHBOARD_HTML
 
 logging.basicConfig(
@@ -115,6 +117,7 @@ def salud():
         "supabase_configurado": configuracion.hay_supabase(),
         "instagram_apify_configurado": configuracion.hay_apify_instagram(),
         "busqueda_recursos_apify_configurada": configuracion.hay_apify_busqueda(),
+        "chatwoot_configurado": configuracion.hay_chatwoot(),
     }
 
 
@@ -236,3 +239,20 @@ def personas(peticion: PeticionPersonas):
 def listar_negocios(limite: int = 20, ciudad: str | None = None):
     """Los mejores prospectos guardados, ordenados por puntuación."""
     return supabase.mejores_negocios(limite=limite, ciudad=ciudad)
+
+
+@app.post(
+    "/contactar/{negocio_id}",
+    response_model=ResultadoOutreach,
+    dependencies=[Depends(verificar_token)],
+)
+def contactar_negocio(negocio_id: str):
+    """Ejecuta el primer contacto aprobado o crea una tarea manual auditable."""
+    try:
+        return outreach.contactar(negocio_id)
+    except outreach.NegocioNoEncontrado as error:
+        raise HTTPException(status_code=404, detail="No existe ese negocio.") from error
+    except outreach.OutreachNoDisponible as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except outreach.ProspectoNoContactable as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error

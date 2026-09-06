@@ -1,7 +1,23 @@
 # Outreach multicanal con Chatwoot como panel de control
 
 **Fecha:** 2026-08-17
-**Estado:** Aprobado para planificación
+**Estado:** Backend implementado; activación operativa pendiente
+
+## Corrección operativa aplicada durante la implementación
+
+La API autenticada de Chatwoot exige un `source_id` perteneciente a un
+contacto del inbox para crear una conversación. Una URL pública scrapeada de
+Instagram o Facebook no es ese identificador y no habilita un DM frío por la
+API oficial de Meta. Por eso la implementación final adopta esta regla:
+
+- Email: automático cuando existe `CHATWOOT_INBOX_EMAIL_ID`.
+- Instagram, Facebook y WhatsApp: conversación en el inbox manual, nota
+  privada, enlace y etiqueta `*-pendiente-manual`; nunca se informa como
+  enviado al prospecto.
+
+La decisión evita falsos positivos de entrega y conserva Chatwoot como panel
+de auditoría. La activación real requiere `CHATWOOT_URL`, API key, cuenta y
+los dos inboxes configurados.
 
 ## Contexto
 

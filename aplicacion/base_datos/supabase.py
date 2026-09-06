@@ -206,3 +206,18 @@ def mejores_negocios(limite: int = 20, ciudad: str | None = None) -> list[dict]:
     if ciudad:
         consulta = consulta.eq("ciudad", ciudad)
     return consulta.execute().data or []
+
+
+def obtener_negocio(negocio_id: str) -> dict | None:
+    """Obtiene un prospecto por id para una operación interna protegida."""
+    supabase = cliente()
+    if supabase is None:
+        return None
+    respuesta = (
+        supabase.table("negocios")
+        .select("*")
+        .eq("id", negocio_id)
+        .limit(1)
+        .execute()
+    )
+    return respuesta.data[0] if respuesta.data else None

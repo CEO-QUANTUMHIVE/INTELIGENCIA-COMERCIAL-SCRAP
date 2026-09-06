@@ -45,6 +45,14 @@ APIFY_BUSQUEDA_MAX_COSTO_USD = float(
     os.getenv("APIFY_BUSQUEDA_MAX_COSTO_USD", "0.50")
 )
 
+# Outreach / bandeja omnicanal
+CHATWOOT_URL = os.getenv("CHATWOOT_URL", "").strip().rstrip("/")
+CHATWOOT_API_KEY = os.getenv("CHATWOOT_API_KEY", "").strip()
+CHATWOOT_ACCOUNT_ID = int(os.getenv("CHATWOOT_ACCOUNT_ID", "0"))
+CHATWOOT_INBOX_EMAIL_ID = int(os.getenv("CHATWOOT_INBOX_EMAIL_ID", "0"))
+CHATWOOT_INBOX_MANUAL_ID = int(os.getenv("CHATWOOT_INBOX_MANUAL_ID", "0"))
+CHATWOOT_TIMEOUT = float(os.getenv("CHATWOOT_TIMEOUT", "20"))
+
 # API
 PUERTO = int(os.getenv("PUERTO", "8000"))
 # Token que deben mandar los que consumen la API (Fábrica de Webs, Fábrica de
@@ -96,3 +104,13 @@ def hay_apify_instagram() -> bool:
 def hay_apify_busqueda() -> bool:
     """Indica si el buscador web de recursos puede ejecutar su Actor."""
     return _tiene_valor_real(APIFY_TOKEN) and bool(APIFY_BUSQUEDA_ACTOR)
+
+
+def hay_chatwoot() -> bool:
+    """Indica si el panel de outreach tiene credenciales e inbox disponible."""
+    return (
+        _tiene_valor_real(CHATWOOT_URL)
+        and _tiene_valor_real(CHATWOOT_API_KEY)
+        and CHATWOOT_ACCOUNT_ID > 0
+        and (CHATWOOT_INBOX_EMAIL_ID > 0 or CHATWOOT_INBOX_MANUAL_ID > 0)
+    )
